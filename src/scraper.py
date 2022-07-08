@@ -14,9 +14,10 @@ def _generate_markets(searchTerm: str) -> json:
     data = r.json()
     return data
 
-def _all_offers(searchTerm: str) -> List:
+def _all_offers(searchTerm: str) -> Dict:
     markets = _generate_markets(searchTerm)
     rawOffers = dict()
+    n = 1
     for market in markets:
         marketId = market["wwIdent"]
         marketName = market["marketHeadline"]
@@ -28,7 +29,12 @@ def _all_offers(searchTerm: str) -> List:
 
         r = _requests.request("GET", url, data=payload, headers=headers)
         raw = r.json()
-        rawOffers[marketName + " " + marketAdress] = raw["filters"][0]["categories"]
+        rawOffers[n] = {
+            "market": marketName + " " + marketAdress,
+            "offers": raw["filters"][0]["categories"]
+        }
+        
+        n += 1
     return rawOffers
 
 print(_all_offers("Hoheluft"))
