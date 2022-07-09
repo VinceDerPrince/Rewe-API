@@ -52,7 +52,6 @@ def offers(searchTerm: str) -> Dict:
         for category in markets[market]["offers"]:
             for offer in category["offers"]:
                 if offer["id"] not in ids:
-                    print(offer["id"])
                     itemId = offer["id"]
                     ids.append(itemId)
                     url = f"https://www.rewe.de/api/offer-details/{itemId}"
@@ -78,8 +77,6 @@ def offers(searchTerm: str) -> Dict:
         i += 1
 
     return complete
-
-print(offers("Hoheluft"))
 
 
 
