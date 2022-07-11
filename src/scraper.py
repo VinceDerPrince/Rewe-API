@@ -1,6 +1,10 @@
 import json
 from typing import Dict, List
+from unittest import result
 import requests as _requests
+import asyncio
+import aiohttp
+import time
 
 def _generate_markets(searchTerm: str) -> json:
     url = "https://www.rewe.de/api/marketsearch"
@@ -38,46 +42,68 @@ def _all_offers(searchTerm: str) -> Dict:
         n += 1
     return rawOffers
 
+def get_tasks(session, ids):
+    tasks = []
+    for itemId in ids:
+        tasks.append(asyncio.create_task(session.get(f"https://www.rewe.de/api/offer-details/{itemId}?searchTerm={itemId}", ssl=False)))
+    return tasks
+
+async def get_ids(ids):
+    results = []
+    print(len(ids))
+    async with aiohttp.ClientSession() as session:
+        tasks = get_tasks(session, ids)
+        print(tasks)
+        responses = await asyncio.gather(*tasks)
+        print("AM I HERE YET?")
+        
+        for response in responses:
+            print("working with id: {}".format(response))
+            results.append(await response.json(content_type=None))
+    print(results)
+    return results
+
 def offers(searchTerm: str) -> Dict:
     markets = _all_offers(searchTerm)
-    ids = []
     complete = dict()
     i = 1
     for market in markets:
+        ids = []
         query = dict()
         query["id"] = markets[market]["id"]
         query["market"] = markets[market]["market"]
         n = 1
-        offers = dict()
         for category in markets[market]["offers"]:
             for offer in category["offers"]:
                 if offer["id"] not in ids:
                     itemId = offer["id"]
                     ids.append(itemId)
-                    url = f"https://www.rewe.de/api/offer-details/{itemId}"
-
-                    querystring = {"wwIdent":itemId}
-
-                    headers = {"cookie": "mtc=s%253AIFMzL9Oul6jfdAJbQhy%252B2PQwXnByb2R1Y3RsaXN0LWZ1bm5lbGluZy16ZXJvLXJlc3VsdHMtcGFyY2VsLWNoZWNrNHByb2R1Y3RsaXN0LW5ldy1kZWFscy1wYWdlJnBheWJhY2stZWNvdXBvbi1hcGkucGF5YmFjay1yZXdlLW5ld3NsZXR0ZXJEcHJvZHVjdGxpc3QtbW9iaWxlLWNhdGVnb3J5LWZpbHRlciphYmhvbHNlcnZpY2UtcmVsb2FkZWQsb2ZmZXItZGV0YWlscy10cmFja2luZz5wcm9kdWN0bGlzdC1uYXZpZ2F0aW9uLXRyYWNraW5nKm1vYmlsZS1wYXliYWNrLWFwaUtleSZwYXliYWNrLWNhcmQtY2hhbmdlJG1lbmdlbnJhYmF0dGllcnVuZypwYXliYWNrLXRhcmdldGVkLWJ1cm4oc3dpdGNoLXJ1bGUtaW5zaWdodHMocGF5YmFjay12b3VjaGVyLXdhbGwocHJvZHVjdGxpc3QtY2l0cnVzYWQubmV3LW5hdmlnYXRpb24tdHJhY2tpbmcod29va2llZXMtcGlja3VwLXBhZ2UmbWFya3RzZWl0ZS1yZWxvYWRlZDpwcm9kdWN0bGlzdC1uZXctbW9iaWxlLWZpbHRlciBwYXliYWNrLWV2b3VjaGVyQGluaS0zNjc4LWRpc21hbnRsaW5nLW1hcmtldHBsYWNlFG5ldy1oZWFkZXI6cGF5YmFjay10YXJnZXRlZC1ib251cy1jb3Vwb242aW5pLTM4MTItaGlkZS1yZWd1bGFyLXByaWNlAAAA.B0hbv5i%252Bw6fZqa2zekZ3EMgvK0pL5KZNXLkC1myDsq0; MRefererUrl=direct; _rdfa=s%253Aafe95d8f-c902-4ac0-af9e-38aefb723c36.TTrHhpPQLiUsRmu7l8ebIwwIQx4cJvvnUmJgh9xFjlc; rstp=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhZXMxOTIiOiI3ZjM4NjhjOTM2OGRhZDYyODBhNzkxZDg4YWU3ODJhYTZiODY4NjdkYmM0ZmE2ODYwYzJlNWFiYWY2YzFkMjIzMjgxNTI3MTFiMWE0NjBmZGNhMGY3YzRlMDljMTJlMTc5ZDBiYWZlMDA0ZmY3OGRiZDhlNWFjN2QyZDU0ZGY2YzAxMTAyMjBiMDQzMWI3ZGViMTUwOGQxZjQ1ZjViZTM3ZTI1OTYwZWYwZDVmZWNhZmNiMjhlZTBlYTFhNzFjYTk4Y2Y1YmU4YjdiNDExMmVlZjVlZjYwYWQ5NzM1MzNmYmVlN2JhNWRkOTU4NzFmMGE5MDIwOGMxZmVmZGYxYjQ0IiwiaWF0IjoxNjU3MjkyMzM5LCJleHAiOjE2NTcyOTI5Mzl9.q96wiHdUZ8um4t55j88Nz6YT1VHSiNk3EMqwcCAL2zFpSR5XLA2zDOAdhICj8joKFvZM5p5SZf0jp-0SUAbyrA; __cfruid=cde6fd47a76da21e1b5d79fc82beee179309320e-1657291910; _cfuvid=nEKf.zWiV3_hnd8SdLCP0WokLzKKQxx_0J3Dsz_wgwc-1657291910287-0-604800000"}
-
-                    r = _requests.request("GET", url, headers=headers, params=querystring)
-                    params = r.json()
-                    offers[n] = {
-                        "name": params["product"]["description"],
-                        "id": params["id"],
-                        "price": params["pricing"]["priceInCent"],
-                        "pastPrice": params["pricing"]["crossOutPriceInCent"],
-                        "discount": params["pricing"]["advantage"],
-                        "image": params["pictures"]["productImages"][0],
-                        "validTill": params["validUntil"]
-                    }
-                    n += 1
+        results = asyncio.run(get_ids(ids))
+        n = 1
+        offers = dict()
+        for params in results:
+            offers[n] = {
+                "name": params["product"]["description"],
+                "id": params["id"],
+                "price": params["pricing"]["priceInCent"],
+                "pastPrice": params["pricing"]["crossOutPriceInCent"],
+                "discount": params["pricing"]["advantage"],
+                "image": params["pictures"]["productImages"][0],
+                "validTill": params["validUntil"]
+            }
+            n += 1
         query["offers"] = offers
         complete[i] = query
         i += 1
+        print("Sleeping now...")
+        time.sleep(5)
+        print("AWAKE!!")
 
     return complete
 
-print(offers("Hoheluft"))
+#1:34,84 total with .request() & Header & params
+#1:30,33 total with .get()
+#0:58,488 total with Session
+print(offers("Eppendorf"))
 
 
