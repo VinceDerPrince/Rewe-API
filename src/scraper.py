@@ -105,16 +105,17 @@ def offers(searchTerm: str) -> Dict:
             print("Sleeping now...")
             time.sleep(20)
             print("AWAKE!!")
+    dict1 = complete
+    out_file = open("offers.json", "w")
+    
+    json.dump(dict1, out_file, indent = 6)
+    
+    out_file.close()
     return complete
 
 #1:34,84 total with .request() & Header & params
 #1:30,33 total with .get()
 #0:58,488 total with Session
-dict1 = offers("Hoheluft")
-out_file = open("offers.json", "w")
-  
-json.dump(dict1, out_file, indent = 6)
-  
-out_file.close()
+#0:27 with async
 
 
