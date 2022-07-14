@@ -212,7 +212,7 @@ def offers(searchTerm: str) -> Dict:
     complete = dict()
     i = 1
     ids = []
-    for market in range(1,2):
+    for market in markets:
         ids_dups = []
         query = dict()
         query["id"] = markets[market]["id"]
@@ -248,7 +248,8 @@ def offers(searchTerm: str) -> Dict:
 #0:58,488 total with Session
 #0:27 with async
 
-offers("hoheluft")
+if __name__ == "__main__":
+    offers("hoheluft")
 
 
 
